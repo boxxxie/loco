@@ -201,6 +201,9 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
   (let [x (->choco x)
         y (->choco y)]
     (cond
+      (and (number? y) (number? x)) (ICF/times (->choco-int-var x)
+                                               (->choco-int-var y)
+                                               (->choco-int-var z))
       (number? y) (ICF/arithm ($*view x y) "=" (->choco-int-var z))
       (number? x) (ICF/arithm ($*view y x) "=" (->choco-int-var z))
       :else (ICF/times x y (->choco-int-var z)))))
