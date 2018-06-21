@@ -117,6 +117,64 @@
 
 (deftest logic-test
   (test-constraint-model
+   [($in :x 0 3)
+    ($if ($= 0 ($mod :x 2)) ($true) ($false))]
+   [{:x 2} {:x 0}])
+
+  (test-constraint-model
+   [($in :x 0 3)
+    ($in :y 0 100)
+    ($if ($= 0 ($mod :x 2))
+         ($= :y ($+ 30 :x))
+         ($= :y ($+ 10 :x)))]
+   [
+    {:x 3, :y 13}
+    {:x 0, :y 30}
+    {:x 2, :y 32}
+    {:x 1, :y 11}
+    {:x 0, :y 30}
+    ])
+
+  (test-constraint-model
+   [($in :idx 0 3)
+    ($=  [:idx 0] :idx)
+    ($in [:idx 0] 0 3)
+    ($if
+     ($= 0 ($mod [:idx 0] 2))
+     ($= [:idx 1] ($+ [:idx 0] 1))
+     ($= [:idx 1] ($+ [:idx 0] 2)))
+    ($in [:idx 1] 1 5)
+    ($if
+     ($= 0 ($mod [:idx 1] 2))
+     ($= [:idx 2] ($+ [:idx 1] 1))
+     ($= [:idx 2] ($+ [:idx 1] 2)))
+    ($in [:idx 2] 2 7)
+    ($in [:idx :final] 2 7)
+    ($=  [:idx :final] [:idx 2])]
+   [
+    {:idx 0,
+     [:idx 0] 0,
+     [:idx 1] 1,
+     [:idx 2] 3,
+     [:idx :final] 3}
+    {:idx 1,
+     [:idx 0] 1,
+     [:idx 1] 3,
+     [:idx 2] 5,
+     [:idx :final] 5} ;; good
+    {:idx 2,
+     [:idx 0] 2,
+     [:idx 1] 3,
+     [:idx 2] 5,
+     [:idx :final] 5} ;;good
+    {:idx 3,
+     [:idx 0] 3,
+     [:idx 1] 5,
+     [:idx 2] 7,
+     [:idx :final] 7} ;;good
+    ])
+
+  (test-constraint-model
    [($in :x [1])
     ($true)
     ($not ($false))
@@ -133,7 +191,8 @@
      ($true) ($true)
      ($false) ($true)
      :else ($true))]
-    [{:x 1}]))
+   [{:x 1}])
+  )
 
 (deftest reify-test
   (test-constraint-model
