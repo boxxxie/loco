@@ -80,6 +80,41 @@
     ($!= :x :y :z)]
    [{:x 1 :y 2 :z 2}]))
 
+(deftest conditions-boolean-coercing-test
+  (test-constraint-model
+   [($in :x 0 1)
+    ($and ($true) ($true))]
+   [{:x 1} {:x 0}])
+  (test-constraint-model
+   [($in :x 0 1)
+    ($or ($true) ($true))]
+   [{:x 1} {:x 0}])
+  (test-constraint-model
+   [($in :x 0 1)
+    ($and ($true) :x)]
+   [{:x 1}])
+  (test-constraint-model
+   [($in :x 0 1)
+    ($or ($true) :x)]
+   [{:x 1} {:x 0}])
+  (test-constraint-model
+   [($in :x 0 1)
+    ($in :y 0 1)
+    ($and ($and ($true) :y) :x)]
+   [{:x 1 :y 1}])
+  (test-constraint-model
+   [($in :x 0 1)
+    ($in :y 0 1)
+    ($or ($or ($true) :y) :x)]
+   [{:x 0, :y 0} {:x 1, :y 0} {:x 1, :y 1} {:x 0, :y 1}])
+  (test-constraint-model
+   [($in :x 0 1)
+    ($in :y 0 1)
+    ($in :z 0 1)
+    ($and ($or ($true) ($not :y) :z) :x)]
+   [{:x 1, :y 0, :z 1} {:x 1, :y 1, :z 1} {:x 1, :y 1, :z 0} {:x 1, :y 0, :z 0}])
+  )
+
 (deftest logic-test
   (test-constraint-model
    [($in :x [1])

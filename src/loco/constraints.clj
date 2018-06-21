@@ -450,6 +450,8 @@ Giving more than 2 inputs results in an $and statement with multiple $>= stateme
   [_]
   (ICF/FALSE (:csolver *solver*)))
 
+(declare reify)
+
 (defn $and
   "An \"and\" statement (i.e. \"P^Q^...\"); this statement is true if and only if every subconstraint is true."
   [& constraints]
@@ -459,8 +461,14 @@ Giving more than 2 inputs results in an $and statement with multiple $>= stateme
 
 (defmethod ->choco* :and
   [{constraints :constraints}]
-  (let [constraints (map ->choco constraints)]
-    (LCF/and (into-array Constraint constraints))))
+  (let [chocos (->> constraints (map ->choco))]
+    (if (every? (partial instance? Constraint) chocos)
+      (LCF/and (into-array Constraint chocos))
+      (let [bools (->> chocos
+                       (map (fn [c] (if (instance? Constraint c)
+                                      (reify c)
+                                      c))))]
+        (LCF/and (into-array BoolVar bools))))))
 
 (defn $or
   "An \"or\" statement (i.e. \"PvQv...\"); this statement is true if and only if at least one subconstraint is true."
@@ -471,7 +479,15 @@ Giving more than 2 inputs results in an $and statement with multiple $>= stateme
 
 (defmethod ->choco* :or
   [{constraints :constraints}]
-  (let [constraints (map ->choco constraints)]
+  (let [chocos (->> constraints (map ->choco))]
+    (if (every? (partial instance? Constraint) chocos)
+      (LCF/or (into-array Constraint chocos))
+      (let [bools (->> chocos
+                       (map (fn [c] (if (instance? Constraint c)
+                                      (reify c)
+                                      c))))]
+        (LCF/or (into-array BoolVar bools)))))
+  #_(let [constraints (map ->choco constraints)]
     (LCF/or (into-array Constraint constraints))))
 
 (defn $not
@@ -481,7 +497,11 @@ Giving more than 2 inputs results in an $and statement with multiple $>= stateme
 
 (defmethod ->choco* :not
   [{C :arg}]
-  (LCF/not (->choco C)))
+  (let [choco (->choco C)]
+    (cond
+      (instance? BoolVar choco) (VF/not choco)
+      (instance? Constraint choco) (LCF/not choco)
+      )))
 
 (defn $if
   "An \"if\" statement (i.e. \"implies\", \"P=>Q\"); this statement is true if and only if P is false or Q is true.
@@ -530,6 +550,12 @@ If no \"else\" clause is specified, it is \"True\" by default."
   {:type :reify
    :arg C
    :id (id)})
+
+(defn reify [constraint]
+  (let [C constraint ;;(->choco C)
+        V (make-bool-var)]
+    (LCF/reification V C)
+    V))
 
 (defmethod ->choco* :reify
   [{C :arg}]
