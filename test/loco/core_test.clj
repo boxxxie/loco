@@ -74,7 +74,12 @@
    [($in :x 0 3126)
     ($= ($** 2 5) :x)]
    [{:x 32}])
-
+  
+  (test-constraint-model
+   [($in :x 0 3126)
+    ($= :x ($** 2 5))]
+   [{:x 32}])
+  
   (test-constraint-model
    [($in :x 0 4)
     ($in :z 0 32)
@@ -114,7 +119,12 @@
    [($in :z 0 1000)
     ($= :z ($** 2 ($** 2 2)) )]
    [{:z 16}])
-  
+
+  (test-constraint-model
+   [($in :z 0 1000)
+    ($= ($** 2 ($** 2 2)) :z)]
+   [{:z 16}])
+
   ;;not supported
   #_(test-constraint-model
    [($in :x -5 5)

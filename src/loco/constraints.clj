@@ -255,13 +255,17 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
 
 (declare $if)
 
-(defn- exp
+(defn- exp-helper
   ([base-arg exp-arg])
   ([base-arg exp-arg eq-arg]
    (let [base (->choco base-arg)
-        exp (->choco exp-arg)
-        [lb-base ub-base] (if (number? base-arg) [base-arg base-arg] [(.getLB base) (.getUB base)])
-        [lb-exp ub-exp]   (if (number? exp-arg)  [exp-arg   exp-arg] [(.getLB exp)  (.getUB exp)])]
+         exp (->choco exp-arg)
+         [lb-base ub-base] (cond
+                             (number? base-arg)          [base-arg base-arg]
+                             (instance? IntVar base)     [(.getLB base) (.getUB base)])
+         [lb-exp ub-exp]   (cond
+                             (number? exp-arg)          [exp-arg exp-arg]
+                             (instance? IntVar exp)     [(.getLB exp)  (.getUB exp)])]
      (cond
        (and (number? exp) (number? base)) (ICF/arithm
                                            (->int-var (int (Math/pow base-arg exp-arg)))
@@ -288,16 +292,19 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
 
 (defmethod ->choco* :**
   [{base-arg :arg1 exp-arg :arg2}]
-  (let [nums (keypoints [base-arg exp-arg] pow 1)
+  (let [
+        base (->choco base-arg)
+        exp (->choco exp-arg)
+        nums (keypoints [base exp] pow 1)
         total-min (apply min nums)
         total-max (apply max nums)
         partial-eq-var (make-int-var total-min total-max)]
-    (doall (map constrain! (flatten (vector (exp base-arg exp-arg partial-eq-var)))))  
+    (doall (map constrain! (flatten (vector (exp-helper base-arg exp-arg partial-eq-var)))))  
     partial-eq-var))
 
 (defmethod ->choco* [:** :=]
   [{base-arg :arg1 exp-arg :arg2 eq-arg :eq-arg}]
-  (exp base-arg exp-arg eq-arg))
+  (exp-helper base-arg exp-arg eq-arg))
 
 #_(defmethod ->choco* [:** :=]
   [{base-arg :arg1 exp-arg :arg2 eq-arg :eq-arg}]
@@ -494,7 +501,6 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
   (let [op (:eq data)
         X (->choco-int-var (:arg1 data))
         Y (->choco-int-var (:arg2 data))]
-    ;(println X Y)
     (ICF/arithm X (name op) Y)))
 
 (defn-equality-constraint $<
