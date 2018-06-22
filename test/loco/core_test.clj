@@ -26,11 +26,84 @@
   (test-constraint-model
    [($in :x -5 5)
     ($in :y -5 5)
+    ($= ($div :x :y) 5)]
+   [{:x 5, :y 1} {:x -5, :y -1}])
+
+  (test-constraint-model
+   [($in :x 0 100)
+    ($in :y 0 100)
+    ($= ($div :x :y) 5)]
+   [{:x 10, :y 2} {:x 55, :y 11} {:x 45, :y 9} {:x 30, :y 6}
+    {:x 90, :y 18} {:x 65, :y 13} {:x 100, :y 20} {:x 25, :y 5}
+    {:x 85, :y 17} {:x 35, :y 7} {:x 40, :y 8} {:x 80, :y 16}
+    {:x 70, :y 14} {:x 15, :y 3} {:x 75, :y 15} {:x 5, :y 1}
+    {:x 95, :y 19} {:x 20, :y 4} {:x 60, :y 12} {:x 50, :y 10}])
+
+  (test-constraint-model
+   [($in :x -5 5)
+    ($in :y -5 5)
     ($in :z -5 5)
     ($= ($+ :x :y) 5)
     ($= ($- :x :z) 2)
     ($= ($* :y :z) 2)]
-   [{:z 1, :y 2, :x 3} {:z 2, :y 1, :x 4}]))
+   [{:z 1, :y 2, :x 3} {:z 2, :y 1, :x 4}])
+
+  (test-constraint-model
+   [($in :x -5 5)
+    ($in :y -5 5)
+    ($in :z -5 5)
+    ($= ($* :y ($* :z :x)) 125)]
+   [{:x -5, :y 5, :z -5} {:x 5, :y 5, :z 5}
+    {:x -5, :y -5, :z 5} {:x 5, :y -5, :z -5}])
+
+  (test-constraint-model
+   [($in :x 0 3126)
+    ($= ($** 2 5) :x)]
+   [{:x 32}])
+
+  (test-constraint-model
+   [($in :x 0 4)
+    ($in :z 0 32)
+    ($= ($** :x 2) :z)]
+   [{:x 3, :z 9} {:x 4, :z 16} {:x 0, :z 0} {:x 2, :z 4} {:x 1, :z 1}])
+
+  (test-constraint-model
+     [($in :z 0 1024)
+      ($in :y 2 3)
+      ($in :x 0 4)
+      ($= ($** :x :y) :z)]
+     [{:z 64, :y 3, :x 4} {:z 8, :y 3, :x 2} {:z 9, :y 2, :x 3}
+      {:z 16, :y 2, :x 4} {:z 4, :y 2, :x 2} {:z 27, :y 3, :x 3}])
+
+  (test-constraint-model
+   [($in :x 0 8)
+    ($in :z 0 4000)
+    ($= ($** :x 2) :z)]
+   [{:x 6, :z 36} {:x 3, :z 9} {:x 4, :z 16} {:x 0, :z 0}
+    {:x 2, :z 4} {:x 5, :z 25} {:x 8, :z 64} {:x 7, :z 49}
+    {:x 1, :z 1}])
+
+  (test-constraint-model
+   [($in :x 0 3126)
+    ($in :y 0 5)
+    ($= ($** 5 :y) :x)]
+   [{:x 0, :y 0} {:x 25, :y 2} {:x 625, :y 4} {:x 3125, :y 5}
+    {:x 5, :y 1} {:x 125, :y 3}])
+
+  (test-constraint-model
+   [($in :x 0 5)
+    ($in :y 0 5)
+    ($= ($** :x :y) 3125)]
+   [{:x 5, :y 5}])
+
+  ;;not supported
+  #_(test-constraint-model
+   [($in :x -5 5)
+    ($in :y -5 5)
+    ($= ($** :x :y) 25)]
+   [])
+
+  )
 
 (deftest abs-test
   (test-constraint-model

@@ -171,6 +171,7 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
       (VF/minus x))))
 
 (declare $=)
+(declare $if)
 
 (defn $*
   "Takes two arguments. One of the arguments can be a number greater than or equal to -1."
@@ -213,6 +214,7 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
   (let [x (->choco x)
         y (->choco y)]
     (cond
+      (and (number? x) (number? y)) ($*view (->choco-int-var x) y)
       (number? y) ($*view x y)
       (number? x) ($*view y x)
       :else (let [nums (keypoints [x y] * 1)
@@ -221,6 +223,62 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
                   z (make-int-var total-min total-max)]
               (constrain! (ICF/times x y z))
               z))))
+
+(defn $div
+  "Takes two arguments. One of the arguments can be a number greater than or equal to -1."
+  [x y]
+  {:type :div
+   :arg1 x
+   :arg2 y
+   :id (id)
+   :eq-shortcut true})
+
+(defmethod ->choco* [:div :=]
+  [{x :arg1 y :arg2 z :eq-arg}]
+  ;;z = x / y -> 4 = 12 / 3
+  ;;z = x * y
+  ($if ($= y 0)
+       ($= z 0)
+       ($= x ($* y z))))
+
+(defn $**
+  "Takes two arguments. One of the arguments can be a number greater than or equal to -1."
+  [x y]
+  {:type :**
+   :arg1 x
+   :arg2 y
+   :id (id)
+   :eq-shortcut true})
+
+;;FIXME: implement ->choco* :*
+
+(declare $if)
+
+(defmethod ->choco* [:** :=]
+  [{base-arg :arg1 exp-arg :arg2 eq-arg :eq-arg}]
+  (let [base (->choco base-arg)
+        exp (->choco exp-arg)
+        [lb-base ub-base] (if (number? base-arg) [base-arg base-arg] [(.getLB base) (.getUB base)])
+        [lb-exp ub-exp]   (if (number? exp-arg)  [exp-arg   exp-arg] [(.getLB exp)  (.getUB exp)])]
+    (cond
+      (and (number? exp) (number? base))
+      (ICF/arithm (->choco-int-var (int (Math/pow base-arg exp-arg))) "=" (->choco-int-var eq-arg))
+      :else (for [exp-n (range lb-exp (inc ub-exp))]
+              (cond
+                (= 0 exp-n) [($if ($= eq-arg ($* base-arg 0))
+                                  ($= exp-arg exp-n))
+                             ($if ($= exp-arg exp-n)
+                                  ($= eq-arg ($* base-arg 0)))]
+                (pos? exp-n) [($if ($= eq-arg (reduce $* (repeat exp-n base-arg)))
+                                   ($= exp-arg exp-n))
+                              ($if ($= exp-arg exp-n)
+                                   ($= eq-arg (reduce $* (repeat exp-n base-arg))))]
+                (neg? exp-n) (throw (ex-info "negative exponents are not supported" {}))
+                #_[($if ($= eq-arg ($div 1 (reduce $* (repeat (Math/abs exp-n) base-arg))))
+                        ($= exp-arg exp-n))
+                   ($if ($= exp-arg exp-n)
+                        ($= eq-arg ($div 1 (reduce $* (repeat (Math/abs exp-n) base-arg)))))]))
+      )))
 
 (defn $min
   "The minimum of several arguments. The arguments can be a mixture of int-vars and numbers."

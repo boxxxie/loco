@@ -149,9 +149,14 @@ and returns a list of variable declarations"
         s (new-solver)]
     (binding [*solver* s]
       (doseq [i problem
-              :let [i (->choco i)]]
-        (when (instance? Constraint i)
-          (constrain! i)))
+              :let [c (->choco i)]]
+        ;;FIXME: this should be recursive
+        (doseq [constraint (flatten [c])
+                :let [constraint (if (map? constraint)
+                                   (->choco constraint)
+                                   constraint)]]
+          (when (instance? Constraint constraint)
+            (constrain! constraint))))
       (let [vars (vals @(:my-vars s))
             strategy (ISF/minDom_LB (into-array IntVar vars))]
         (.set (:csolver s) (into-array AbstractStrategy [strategy])))
