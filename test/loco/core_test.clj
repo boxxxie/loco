@@ -37,6 +37,12 @@
     ($= ($div :x :y) 5)]
    [{:x 5, :y 1} {:x -5, :y -1}])
 
+    ;; not sure if this can be supported
+  #_(test-constraint-model
+   [($in :x -10 10)
+    ($= ($div ($div 16 2) 2) :x)]
+   [{:x 5, :y 1} {:x -5, :y -1}])
+  
   (test-constraint-model
    [($in :x 0 100)
     ($in :y 0 100)
