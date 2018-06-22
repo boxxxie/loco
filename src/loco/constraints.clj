@@ -121,7 +121,8 @@ Possible arglist examples:
   (VF/offset x const))
 
 (defn $+
-  "Takes a combination of int-vars and numbers, and returns another number/int-var which is constrained to equal the sum."
+  "Takes a combination of int-vars and numbers, and returns another
+  number/int-var which is constrained to equal the sum."
   ([x]
     x)
   ([x y & more]
