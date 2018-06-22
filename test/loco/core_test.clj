@@ -104,6 +104,11 @@
     ($= ($** :x :y) 3125)]
    [{:x 5, :y 5}])
 
+  (test-constraint-model
+   [($in :z 0 1000)
+    ($= :z ($** 2 ($** 2 2)) )]
+   [{:z 16}])
+  
   ;;not supported
   #_(test-constraint-model
    [($in :x -5 5)

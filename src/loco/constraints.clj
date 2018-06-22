@@ -12,6 +12,10 @@
                                              VF)
            org.chocosolver.solver.constraints.nary.automata.FA.FiniteAutomaton))
 
+;;-> choco helpers
+(defmethod ->choco* IntVar [x] x)
+(defmethod ->choco* BoolVar [x] x)
+
 (defn- domain-min
   [x]
   (if (number? x)
@@ -255,7 +259,51 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
 
 (declare $if)
 
+(defn- exp
+  ([base-arg exp-arg])
+  ([base-arg exp-arg eq-arg]
+   (let [base (->choco base-arg)
+        exp (->choco exp-arg)
+        [lb-base ub-base] (if (number? base-arg) [base-arg base-arg] [(.getLB base) (.getUB base)])
+        [lb-exp ub-exp]   (if (number? exp-arg)  [exp-arg   exp-arg] [(.getLB exp)  (.getUB exp)])]
+     (cond
+       (and (number? exp) (number? base)) (ICF/arithm
+                                           (->int-var (int (Math/pow base-arg exp-arg)))
+                                           "="
+                                           (->choco eq-arg))
+       :else (for [exp-n (range lb-exp (inc ub-exp))]
+               (cond
+                 (= 0 exp-n) [($if ($= eq-arg ($* base-arg 0))
+                                   ($= exp-arg exp-n))
+                              ($if ($= exp-arg exp-n)
+                                   ($= eq-arg ($* base-arg 0)))]
+                 (pos? exp-n) [($if ($= eq-arg (reduce $* (repeat exp-n base-arg)))
+                                    ($= exp-arg exp-n))
+                               ($if ($= exp-arg exp-n)
+                                    ($= eq-arg (reduce $* (repeat exp-n base-arg))))]
+                 (neg? exp-n) (throw (ex-info "negative exponents are not supported" {}))
+                 #_[($if ($= eq-arg ($div 1 (reduce $* (repeat (Math/abs exp-n) base-arg))))
+                         ($= exp-arg exp-n))
+                    ($if ($= exp-arg exp-n)
+                         ($= eq-arg ($div 1 (reduce $* (repeat (Math/abs exp-n) base-arg)))))]))
+      ))))
+
+(defn- pow [base exp] (Math/pow base exp))
+
+(defmethod ->choco* :**
+  [{base-arg :arg1 exp-arg :arg2}]
+  (let [nums (keypoints [base-arg exp-arg] pow 1)
+        total-min (apply min nums)
+        total-max (apply max nums)
+        partial-eq-var (make-int-var total-min total-max)]
+    (doall (map constrain! (flatten (vector (exp base-arg exp-arg partial-eq-var)))))  
+    partial-eq-var))
+
 (defmethod ->choco* [:** :=]
+  [{base-arg :arg1 exp-arg :arg2 eq-arg :eq-arg}]
+  (exp base-arg exp-arg eq-arg))
+
+#_(defmethod ->choco* [:** :=]
   [{base-arg :arg1 exp-arg :arg2 eq-arg :eq-arg}]
   (let [base (->choco base-arg)
         exp (->choco exp-arg)
