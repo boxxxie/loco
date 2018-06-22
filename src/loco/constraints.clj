@@ -281,6 +281,19 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
                         ($= eq-arg ($div 1 (reduce $* (repeat (Math/abs exp-n) base-arg)))))]))
       )))
 
+(defn $sqrt
+  "Takes two arguments. One of the arguments can be a number greater than or equal to -1."
+  [x ]
+  {:type :sqrt
+   :arg1 x
+   :id (id)
+   :eq-shortcut true})
+
+(defmethod ->choco* [:sqrt :=]
+  [{x :arg1 eq :eq-arg}]
+  ;; sqrt(x) => eq * eq = x
+  ($= x ($* eq eq)))
+
 (defn $min
   "The minimum of several arguments. The arguments can be a mixture of int-vars and numbers."
   [& args]

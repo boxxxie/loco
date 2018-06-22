@@ -24,6 +24,14 @@
 
 (deftest arithmetic-test
   (test-constraint-model
+   [($in :x 0 25)
+    ($in :y 0 5)
+    ($= :y ($sqrt :x))]
+   [{{:x 0, :y 0} {:x 9, :y 3}
+     {:x 25, :y 5} {:x 1, :y 1}
+     {:x 16, :y 4} {:x 4, :y 2}}])
+
+  (test-constraint-model
    [($in :x -5 5)
     ($in :y -5 5)
     ($= ($div :x :y) 5)]
