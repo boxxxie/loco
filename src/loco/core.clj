@@ -1,5 +1,5 @@
 (ns loco.core
-  (:import (org.chocosolver.solver.variables VF IntVar)
+  (:import (org.chocosolver.solver.variables VF IntVar BoolVar)
            (org.chocosolver.solver.exception SolverException)
            (org.chocosolver.solver ResolutionPolicy
                                    Solver)
@@ -108,16 +108,15 @@ and returns a list of variable declarations"
           (swap! (:memo-table *solver*) assoc (:id data) result))
         result))))
 
-(defmethod ->choco* java.lang.Number
-  [data]
-  data)
+(defmethod ->choco* IntVar [x] x)
+(defmethod ->choco* BoolVar [x] x)
+(defmethod ->choco* java.lang.Long [data] data)
+(defmethod ->choco* java.lang.Number [data] data)
 
-(defmethod ->choco* clojure.lang.Keyword
-  [data]
+(defmethod ->choco* clojure.lang.Keyword [data]
   (find-int-var *solver* data))
 
-(defmethod ->choco* :vector-var-name
-  [data]
+(defmethod ->choco* :vector-var-name [data]
   (find-int-var *solver* data))
 
 (defn- return-next-solution

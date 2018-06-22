@@ -12,10 +12,6 @@
                                              VF)
            org.chocosolver.solver.constraints.nary.automata.FA.FiniteAutomaton))
 
-;;-> choco helpers
-(defmethod ->choco* IntVar [x] x)
-(defmethod ->choco* BoolVar [x] x)
-
 (defn- domain-min
   [x]
   (if (number? x)
