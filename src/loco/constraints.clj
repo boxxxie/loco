@@ -40,6 +40,7 @@
 
 (defn- constrain!
   [constraint]
+  {:pre [(instance? Constraint constraint)]}
   (.post (:csolver *solver*) constraint))
 
 (defn- ->int-var
@@ -251,42 +252,33 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
    :id (id)
    :eq-shortcut true})
 
-;;FIXME: implement ->choco* :*
-
 (declare $if)
 
 (defn- exp-helper
   ([base-arg exp-arg])
   ([base-arg exp-arg eq-arg]
    (let [base (->choco base-arg)
-         exp (->choco exp-arg)
+         exp  (->choco exp-arg)
+         eq   (->choco eq-arg)
          [lb-base ub-base] (cond
                              (number? base-arg)          [base-arg base-arg]
                              (instance? IntVar base)     [(.getLB base) (.getUB base)])
          [lb-exp ub-exp]   (cond
                              (number? exp-arg)          [exp-arg exp-arg]
                              (instance? IntVar exp)     [(.getLB exp)  (.getUB exp)])]
-     (cond
-       (and (number? exp) (number? base)) (ICF/arithm
-                                           (->int-var (int (Math/pow base-arg exp-arg)))
-                                           "="
-                                           (->choco eq-arg))
-       :else (for [exp-n (range lb-exp (inc ub-exp))]
-               (cond
-                 (= 0 exp-n) [($if ($= eq-arg ($* base-arg 0))
-                                   ($= exp-arg exp-n))
-                              ($if ($= exp-arg exp-n)
-                                   ($= eq-arg ($* base-arg 0)))]
-                 (pos? exp-n) [($if ($= eq-arg (reduce $* (repeat exp-n base-arg)))
-                                    ($= exp-arg exp-n))
-                               ($if ($= exp-arg exp-n)
-                                    ($= eq-arg (reduce $* (repeat exp-n base-arg))))]
-                 (neg? exp-n) (throw (ex-info "negative exponents are not supported" {}))
-                 #_[($if ($= eq-arg ($div 1 (reduce $* (repeat (Math/abs exp-n) base-arg))))
-                         ($= exp-arg exp-n))
-                    ($if ($= exp-arg exp-n)
-                         ($= eq-arg ($div 1 (reduce $* (repeat (Math/abs exp-n) base-arg)))))]))
-      ))))
+     (doseq [exp-n (range lb-exp (inc ub-exp))]
+       (->>
+        (cond
+          (= 0 exp-n) (let [eq1 (->choco ($= eq ($* base 0)))
+                            eq2 (->choco ($= exp-arg exp-n))]
+                        (LCF/ifThen eq1 eq2)
+                        (LCF/ifThen eq2 eq1))
+          (pos? exp-n) (let [times (->choco (reduce $* (repeat exp-n base)))
+                             eq1 (->choco ($= eq times))
+                             eq2 (->choco ($= exp exp-n))]
+                         (LCF/ifThen eq1 eq2)
+                         (LCF/ifThen eq2 eq1))
+          (neg? exp-n) (throw (ex-info "negative exponents are not supported" {}))))))))
 
 (defn- pow [base exp] (Math/pow base exp))
 
@@ -298,39 +290,18 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
         nums (keypoints [base exp] pow 1)
         total-min (apply min nums)
         total-max (apply max nums)
-        partial-eq-var (make-int-var total-min total-max)]
-    (doall (map constrain! (flatten (vector (exp-helper base-arg exp-arg partial-eq-var)))))  
+        partial-eq-var (make-int-var total-min total-max)
+        result (exp-helper base exp partial-eq-var)
+        ]
+    (when (instance? Constraint result)
+      (constrain! result))
     partial-eq-var))
 
 (defmethod ->choco* [:** :=]
   [{base-arg :arg1 exp-arg :arg2 eq-arg :eq-arg}]
   (exp-helper base-arg exp-arg eq-arg))
 
-#_(defmethod ->choco* [:** :=]
-  [{base-arg :arg1 exp-arg :arg2 eq-arg :eq-arg}]
-  (let [base (->choco base-arg)
-        exp (->choco exp-arg)
-        [lb-base ub-base] (if (number? base-arg) [base-arg base-arg] [(.getLB base) (.getUB base)])
-        [lb-exp ub-exp]   (if (number? exp-arg)  [exp-arg   exp-arg] [(.getLB exp)  (.getUB exp)])]
-    (cond
-      (and (number? exp) (number? base))
-      (ICF/arithm (->choco-int-var (int (Math/pow base-arg exp-arg))) "=" (->choco-int-var eq-arg))
-      :else (for [exp-n (range lb-exp (inc ub-exp))]
-              (cond
-                (= 0 exp-n) [($if ($= eq-arg ($* base-arg 0))
-                                  ($= exp-arg exp-n))
-                             ($if ($= exp-arg exp-n)
-                                  ($= eq-arg ($* base-arg 0)))]
-                (pos? exp-n) [($if ($= eq-arg (reduce $* (repeat exp-n base-arg)))
-                                   ($= exp-arg exp-n))
-                              ($if ($= exp-arg exp-n)
-                                   ($= eq-arg (reduce $* (repeat exp-n base-arg))))]
-                (neg? exp-n) (throw (ex-info "negative exponents are not supported" {}))
-                #_[($if ($= eq-arg ($div 1 (reduce $* (repeat (Math/abs exp-n) base-arg))))
-                        ($= exp-arg exp-n))
-                   ($if ($= exp-arg exp-n)
-                        ($= eq-arg ($div 1 (reduce $* (repeat (Math/abs exp-n) base-arg)))))]))
-      )))
+(defmethod ->choco* Constraint [x] x)
 
 (defn $sqrt
   "Takes two arguments. One of the arguments can be a number greater than or equal to -1."
@@ -640,13 +611,12 @@ An optional \"else\" field can be specified, which must be true if P is false."
      :else else-this}))
 
 (defmethod ->choco* :if
-  [{if-this :if then-this :then else-this :else}]
-  (if-not else-this
-    (LCF/ifThen_reifiable (->choco if-this)
-                          (->choco then-this))
-    (LCF/ifThenElse_reifiable (->choco if-this)
-                              (->choco then-this)
-                              (->choco else-this))))
+  [{if :if then :then else :else}]
+  (let [if-this   (->choco if)
+        then-this (->choco then)]
+    (if else
+      (LCF/ifThenElse_reifiable if-this then-this (->choco else))
+      (LCF/ifThen_reifiable if-this then-this))))
 
 (defn $cond
   "A convenience function for constructing a \"cond\"-like statement out of $if statements.

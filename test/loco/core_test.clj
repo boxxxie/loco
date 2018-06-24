@@ -125,6 +125,11 @@
     ($= ($** 2 ($** 2 2)) :z)]
    [{:z 16}])
 
+  (test-constraint-model
+   [($in :return 0 100000)
+    ($= :return ($** 2 ($** 2 ($** 2 2))))]   
+   [{:return 65536}])
+
   ;;not supported
   #_(test-constraint-model
    [($in :x -5 5)
