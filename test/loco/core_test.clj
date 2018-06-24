@@ -394,6 +394,26 @@
     ($in :x 0 4)
     ($= ($nth [:a :b :c :d :e] :x) :x)]
    [{:a 5 :b 5 :c 2 :d 5 :e 5 :x 2}])
+
+  (test-constraint-model
+   [($in :x [4 8])
+    ($in :y 0 10)
+    ($= ($nth [1 2 3 4 5 6 7 8 9 0] :y) :x)]
+   [{:x 8, :y 7}
+    {:x 4, :y 3}])
+
+  ;;mapping example
+  (test-constraint-model
+   [($in :key (vec (range 0 9 2)))
+    ($in :val 0 100)
+    ($in :idx 0 10)
+    ($= ($nth [1 2 3 4 5 6 7 8 9 0] :idx) :key)
+    ($= ($nth [11 21 31 41 51 61 71 81 91 100] :idx) :val)
+    ]
+   [{:key 2, :val 21, :idx 1} {:key 6, :val 61, :idx 5}
+    {:key 8, :val 81, :idx 7} {:key 0, :val 100, :idx 9}
+    {:key 4, :val 41, :idx 3}])
+
   (test-constraint-model
    [($in :a [5])
     ($in :b [5])
