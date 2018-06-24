@@ -57,12 +57,12 @@
     {:x 5, :y 5, :z 5} {:x 20, :y 20, :z 5}
     {:x 30, :y 15, :z 10} {:x 10, :y 5, :z 10}])
 
-    ;; not sure if this can be supported
+  ;; not sure if this can be supported
   #_(test-constraint-model
-   [($in :x -10 10)
-    ($= ($div ($div 16 2) 2) :x)]
-   [{:x 5, :y 1} {:x -5, :y -1}])
-  
+     [($in :x -10 10)
+      ($= ($div ($div 16 2) 2) :x)]
+     [{:x 5, :y 1} {:x -5, :y -1}])
+
   (test-constraint-model
    [($in :x 0 100)
     ($in :y 0 100)
@@ -94,12 +94,12 @@
    [($in :x 0 3126)
     ($= ($** 2 5) :x)]
    [{:x 32}])
-  
+
   (test-constraint-model
    [($in :x 0 3126)
     ($= :x ($** 2 5))]
    [{:x 32}])
-  
+
   (test-constraint-model
    [($in :x 0 4)
     ($in :z 0 32)
@@ -107,12 +107,12 @@
    [{:x 3, :z 9} {:x 4, :z 16} {:x 0, :z 0} {:x 2, :z 4} {:x 1, :z 1}])
 
   (test-constraint-model
-     [($in :z 0 1024)
-      ($in :y 2 3)
-      ($in :x 0 4)
-      ($= ($** :x :y) :z)]
-     [{:z 64, :y 3, :x 4} {:z 8, :y 3, :x 2} {:z 9, :y 2, :x 3}
-      {:z 16, :y 2, :x 4} {:z 4, :y 2, :x 2} {:z 27, :y 3, :x 3}])
+   [($in :z 0 1024)
+    ($in :y 2 3)
+    ($in :x 0 4)
+    ($= ($** :x :y) :z)]
+   [{:z 64, :y 3, :x 4} {:z 8, :y 3, :x 2} {:z 9, :y 2, :x 3}
+    {:z 16, :y 2, :x 4} {:z 4, :y 2, :x 2} {:z 27, :y 3, :x 3}])
 
   (test-constraint-model
    [($in :x 0 8)
@@ -147,15 +147,15 @@
 
   (test-constraint-model
    [($in :return 0 100000)
-    ($= :return ($** 2 ($** 2 ($** 2 2))))]   
+    ($= :return ($** 2 ($** 2 ($** 2 2))))]
    [{:return 65536}])
 
   ;;not supported
   #_(test-constraint-model
-   [($in :x -5 5)
-    ($in :y -5 5)
-    ($= ($** :x :y) 25)]
-   [])
+     [($in :x -5 5)
+      ($in :y -5 5)
+      ($= ($** :x :y) 25)]
+     [])
 
   )
 
@@ -212,34 +212,41 @@
    [($in :x 0 1)
     ($and ($true) ($true))]
    [{:x 1} {:x 0}])
+
   (test-constraint-model
    [($in :x 0 1)
     ($or ($true) ($true))]
    [{:x 1} {:x 0}])
+
   (test-constraint-model
    [($in :x 0 1)
     ($and ($true) :x)]
    [{:x 1}])
+
   (test-constraint-model
    [($in :x 0 1)
     ($or ($true) :x)]
    [{:x 1} {:x 0}])
+
   (test-constraint-model
    [($in :x 0 1)
     ($in :y 0 1)
     ($and ($and ($true) :y) :x)]
    [{:x 1 :y 1}])
+
   (test-constraint-model
    [($in :x 0 1)
     ($in :y 0 1)
     ($or ($or ($true) :y) :x)]
    [{:x 0, :y 0} {:x 1, :y 0} {:x 1, :y 1} {:x 0, :y 1}])
+
   (test-constraint-model
    [($in :x 0 1)
     ($in :y 0 1)
     ($in :z 0 1)
     ($and ($or ($true) ($not :y) :z) :x)]
    [{:x 1, :y 0, :z 1} {:x 1, :y 1, :z 1} {:x 1, :y 1, :z 0} {:x 1, :y 0, :z 0}])
+
   )
 
 (deftest logic-test
@@ -319,6 +326,7 @@
      ($false) ($true)
      :else ($true))]
    [{:x 1}])
+
   )
 
 (deftest reify-test
@@ -339,13 +347,13 @@
 
 (deftest circuit-test
   (-> (solution
-        [($in :a 0 4)
-         ($in :b [0])
-         ($in :c 0 4)
-         ($in :d 0 4)
-         ($in :e 0 4)
-         ($circuit [:a :b :c :d :e])])
-    (as-> sol
+       [($in :a 0 4)
+        ($in :b [0])
+        ($in :c 0 4)
+        ($in :d 0 4)
+        ($in :e 0 4)
+        ($circuit [:a :b :c :d :e])])
+      (as-> sol
           (let [a [:a :b :c :d :e]
                 [v i] (first sol)
                 w (a i)
@@ -356,15 +364,15 @@
                 i (sol y)
                 z (a i)]
             (is (= (count (distinct [v w x y z])) 5)))))
-  ;testing offset
+                                        ;testing offset
   (-> (solution
-        [($in :a 1 5)
-         ($in :b [1])
-         ($in :c 1 5)
-         ($in :d 1 5)
-         ($in :e 1 5)
-         ($circuit [:a :b :c :d :e] 1)])
-    (as-> sol
+       [($in :a 1 5)
+        ($in :b [1])
+        ($in :c 1 5)
+        ($in :d 1 5)
+        ($in :e 1 5)
+        ($circuit [:a :b :c :d :e] 1)])
+      (as-> sol
           (let [a [:a :b :c :d :e]
                 [v i] (first sol)
                 w (a (dec i))
@@ -399,17 +407,17 @@
 (deftest deprecated-regex-test
   (let [regex "(1|2)3*(4|5)"]
     (-> (solutions
-          [($in :a [1])
-           ($in :b [2])
-           ($in :c [3])
-           ($in :d [4])
-           ($in :e [5])
-           ($regex regex [:a :d])
-           ($regex regex [:a :c :c :c :d])
-           ($not ($regex regex [:a :b :c :c :c :d]))])
-      count
-      (= 1)
-      is)))
+         [($in :a [1])
+          ($in :b [2])
+          ($in :c [3])
+          ($in :d [4])
+          ($in :e [5])
+          ($regex regex [:a :d])
+          ($regex regex [:a :c :c :c :d])
+          ($not ($regex regex [:a :b :c :c :c :d]))])
+        count
+        (= 1)
+        is)))
 
 (deftest automaton-test
   (doseq [[description automaton]
@@ -486,22 +494,22 @@
 
 (deftest cardinality-test
   (-> (solutions
-        [($in :a 1 5)
-         ($in :b 1 5)
-         ($in :c 1 5)
-         ($in :d 1 5)
-         ($in :e 1 5)
-         ($in :ones 1 5)
-         ($in :twos 1 5)
-         ($cardinality [:a :b :c :d :e] {1 :ones 2 :twos})])
-    (as-> ms
+       [($in :a 1 5)
+        ($in :b 1 5)
+        ($in :c 1 5)
+        ($in :d 1 5)
+        ($in :e 1 5)
+        ($in :ones 1 5)
+        ($in :twos 1 5)
+        ($cardinality [:a :b :c :d :e] {1 :ones 2 :twos})])
+      (as-> ms
           (doseq [m ms]
             (-> m
-              (map [:a :b :c :d :e])
-              frequencies
-              (map [1 2])
-              (= (map m [:ones :twos]))
-              is)))))
+                (map [:a :b :c :d :e])
+                frequencies
+                (map [1 2])
+                (= (map m [:ones :twos]))
+                is)))))
 
 (deftest optimization-test
   (is (= (solution [($in :x 1 5)]
