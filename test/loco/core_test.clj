@@ -12,6 +12,21 @@
   ([model solution-maps]
    `(test-constraint-model nil ~model ~solution-maps)))
 
+(deftest regression-test
+  (test-constraint-model
+   "[:div :=] must be supported from inside an if statement (this is essentially a nested if)"
+   [
+    ($in [:idx 0] 25 30)
+    ($in [:idx 1] 5 31)
+    ($if ($= 0 ($mod [:idx 0] 5))
+         ($= [:idx 1] ($div [:idx 0] 5))
+         ($= [:idx 1] ($div [:idx 0] 1)))
+    ]
+   [{[:idx 0] 30, [:idx 1] 6} {[:idx 0] 29, [:idx 1] 29}
+    {[:idx 0] 28, [:idx 1] 28} {[:idx 0] 26, [:idx 1] 26}
+    {[:idx 0] 27, [:idx 1] 27} {[:idx 0] 25, [:idx 1] 5}])
+  )
+
 (deftest basic-test
   (test-constraint-model
    "Basic test case with $= and bounded vars "

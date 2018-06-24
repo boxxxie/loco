@@ -1,4 +1,5 @@
 (ns loco.constraints
+  (:refer-clojure :exclude [reify])
   (:require [loco.core :as core :refer [->choco
                                         ->choco*
                                         *solver*]]
@@ -266,7 +267,7 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
         cond (->choco ($= y 0))
         then (->choco ($= z 0))
         else (->choco ($= x ($* y z)))]
-    (LCF/ifThenElse cond then else)))
+    (LCF/ifThenElse_reifiable cond then else)))
 
 (defn $**
   "Takes two arguments. One of the arguments can be a number greater than or equal to -1."
@@ -604,9 +605,7 @@ Giving more than 2 inputs results in an $and statement with multiple $>= stateme
                        (map (fn [c] (if (instance? Constraint c)
                                       (reify c)
                                       c))))]
-        (LCF/or (into-array BoolVar bools)))))
-  #_(let [constraints (map ->choco constraints)]
-    (LCF/or (into-array Constraint constraints))))
+        (LCF/or (into-array BoolVar bools))))))
 
 (defn $not
   "Given a constraint C, returns \"not C\" a.k.a. \"~C\", which is true iff C is false."
@@ -635,13 +634,22 @@ An optional \"else\" field can be specified, which must be true if P is false."
      :then then-this
      :else else-this}))
 
+(defn- if-helper
+  ([if then]
+   (LCF/ifThen_reifiable if then))
+  ([if then else]
+   (LCF/ifThenElse_reifiable if then else)))
+
+(defmethod ->choco* nil [arg] nil)
+
 (defmethod ->choco* :if
   [{if :if then :then else :else}]
   (let [if-this   (->choco if)
-        then-this (->choco then)]
+        then-this (->choco then)
+        else      (->choco else)]
     (if else
-      (LCF/ifThenElse_reifiable if-this then-this (->choco else))
-      (LCF/ifThen_reifiable if-this then-this))))
+      (if-helper if-this then-this else)
+      (if-helper if-this then-this))))
 
 (defn $cond
   "A convenience function for constructing a \"cond\"-like statement out of $if statements.
