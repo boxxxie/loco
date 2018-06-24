@@ -235,13 +235,38 @@ to equal (x - y - z - ...) or (-x) if there's only one argument."
    :id (id)
    :eq-shortcut true})
 
+(defmethod ->choco* :div
+  [{x :arg1 y :arg2}]
+  ;;z = x / y -> 4 = 12 / 3
+  ;;z = x * y
+  (let [x (->choco x)
+        y (->choco y)
+        special-div (fn [dividend divisor]
+                      (if (zero? divisor)
+                        0 ;; div by zero == 0
+                        (unchecked-divide-int dividend divisor)))
+        nums (keypoints [x y] special-div 1)
+        total-min (apply min nums)
+        total-max (apply max nums)
+        z (make-int-var total-min total-max)
+        cond (->choco ($= y 0))
+        then (->choco ($= z 0))
+        else (->choco ($= x ($* y z)))
+        ]
+    (LCF/ifThenElse cond then else)
+    z))
+
 (defmethod ->choco* [:div :=]
   [{x :arg1 y :arg2 z :eq-arg}]
   ;;z = x / y -> 4 = 12 / 3
   ;;z = x * y
-  ($if ($= y 0)
-       ($= z 0)
-       ($= x ($* y z))))
+  (let [x (->choco x)
+        y (->choco y)
+        z (->choco z)
+        cond (->choco ($= y 0))
+        then (->choco ($= z 0))
+        else (->choco ($= x ($* y z)))]
+    (LCF/ifThenElse cond then else)))
 
 (defn $**
   "Takes two arguments. One of the arguments can be a number greater than or equal to -1."

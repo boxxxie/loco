@@ -32,10 +32,15 @@
     {:x 16, :y 4} {:x 4, :y 2}])
 
   (test-constraint-model
-   [($in :x -5 5)
-    ($in :y -5 5)
-    ($= ($div :x :y) 5)]
-   [{:x 5, :y 1} {:x -5, :y -1}])
+   [($in :x 0 100)
+    ($in :y 0 25)
+    ($in :z [5 10])
+    ($= ($div :x ($div :y 5)) :z)]
+   [{:x 15, :y 15, :z 5} {:x 40, :y 20, :z 10}
+    {:x 10, :y 10, :z 5} {:x 20, :y 10, :z 10}
+    {:x 50, :y 25, :z 10} {:x 25, :y 25, :z 5}
+    {:x 5, :y 5, :z 5} {:x 20, :y 20, :z 5}
+    {:x 30, :y 15, :z 10} {:x 10, :y 5, :z 10}])
 
     ;; not sure if this can be supported
   #_(test-constraint-model
